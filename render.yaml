@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: devops-nodejs-webapp
+    runtime: docker
+    plan: starter
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeployTrigger: off
+    disk:
+      name: app-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_PATH
+        value: /app/data/app.db
+      - key: LOG_LEVEL
+        value: info

@@ -1,0 +1,19 @@
+{
+  "env": {
+    "node": true,
+    "commonjs": true,
+    "es2021": true,
+    "jest": true
+  },
+  "extends": ["airbnb-base"],
+  "parserOptions": {
+    "ecmaVersion": "latest"
+  },
+  "rules": {
+    "no-console": "off",
+    "no-param-reassign": "off",
+    "consistent-return": "off",
+    "global-require": "off",
+    "import/no-dynamic-require": "off"
+  }
+}
