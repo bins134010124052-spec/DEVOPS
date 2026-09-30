@@ -8,6 +8,7 @@
     "dev": "node --watch src/server.js",
     "lint": "eslint src tests --ext .js",
     "test": "jest --runInBand",
+    "security": "npm audit --audit-level=high",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
   },
@@ -20,12 +21,15 @@
   ],
   "author": "Your Name",
   "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "morgan": "^1.10.0",
-    "sqlite3": "^5.1.7",
+    "sqlite3": "^6.0.1",
     "winston": "^3.17.0"
   },
   "devDependencies": {

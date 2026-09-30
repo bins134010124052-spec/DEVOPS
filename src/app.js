@@ -19,7 +19,7 @@ const logger = winston.createLogger({
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
 app.use(morgan('combined', {
   stream: {
     write: (message) => logger.info(message.trim()),
@@ -27,16 +27,15 @@ app.use(morgan('combined', {
 }));
 
 const defaultDbPath = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'app.db');
-const dataDir = path.dirname(defaultDbPath);
-
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
 
 let db;
 
 function initializeDatabase(databasePath = defaultDbPath) {
   return new Promise((resolve, reject) => {
+    if (databasePath !== ':memory:') {
+      fs.mkdirSync(path.dirname(databasePath), { recursive: true });
+    }
+
     db = new sqlite3.Database(databasePath, (err) => {
       if (err) {
         reject(err);
@@ -44,10 +43,14 @@ function initializeDatabase(databasePath = defaultDbPath) {
       }
 
       db.run(
-        `CREATE TABLE IF NOT EXISTS items (
+        `CREATE TABLE IF NOT EXISTS products (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          title TEXT NOT NULL,
-          description TEXT,
+          name TEXT NOT NULL,
+          description TEXT NOT NULL DEFAULT '',
+          price REAL NOT NULL CHECK (price >= 0),
+          sku TEXT UNIQUE,
+          category TEXT NOT NULL DEFAULT '',
+          stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`,
@@ -66,7 +69,7 @@ function initializeDatabase(databasePath = defaultDbPath) {
 
 function resetDatabase() {
   return new Promise((resolve, reject) => {
-    db.run('DELETE FROM items', (err) => {
+    db.run('DELETE FROM products', (err) => {
       if (err) {
         reject(err);
         return;
@@ -76,134 +79,185 @@ function resetDatabase() {
   });
 }
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', uptime: process.uptime() });
-});
+function run(sql, parameters = []) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, parameters, function onRun(error) {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(this);
+    });
+  });
+}
 
-app.get('/api/items', async (req, res) => {
+function get(sql, parameters = []) {
+  return new Promise((resolve, reject) => {
+    db.get(sql, parameters, (error, row) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(row);
+    });
+  });
+}
+
+function all(sql, parameters = []) {
+  return new Promise((resolve, reject) => {
+    db.all(sql, parameters, (error, rows) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(rows);
+    });
+  });
+}
+
+function validateProduct(product) {
+  if (!product || typeof product !== 'object' || Array.isArray(product)) {
+    return 'A product object is required';
+  }
+  if (typeof product.name !== 'string' || !product.name.trim()) {
+    return 'Name is required';
+  }
+  if (typeof product.price !== 'number' || !Number.isFinite(product.price) || product.price < 0) {
+    return 'Price must be a non-negative number';
+  }
+  if (product.description !== undefined && typeof product.description !== 'string') {
+    return 'Description must be a string';
+  }
+  if (product.sku !== undefined && product.sku !== null && typeof product.sku !== 'string') {
+    return 'SKU must be a string';
+  }
+  if (product.category !== undefined && typeof product.category !== 'string') {
+    return 'Category must be a string';
+  }
+  if (product.stock !== undefined && (!Number.isInteger(product.stock) || product.stock < 0)) {
+    return 'Stock must be a non-negative integer';
+  }
+  return null;
+}
+
+function validId(id) {
+  return /^[1-9]\d*$/.test(id);
+}
+
+function productValues(product) {
+  return [
+    product.name.trim(),
+    (product.description || '').trim(),
+    product.price,
+    product.sku ? product.sku.trim() || null : null,
+    (product.category || '').trim(),
+    product.stock === undefined ? 0 : product.stock,
+  ];
+}
+
+app.get('/health', async (req, res) => {
   try {
-    const rows = await new Promise((resolve, reject) => {
-      db.all('SELECT * FROM items ORDER BY created_at DESC', (err, savedRows) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(savedRows);
-      });
-    });
-
-    res.json(rows);
+    await get('SELECT 1');
+    res.json({ status: 'ok', uptime: process.uptime() });
   } catch (error) {
-    logger.error('Failed to fetch items', error);
-    res.status(500).json({ error: 'Failed to fetch items' });
+    logger.error('Health check failed', error);
+    res.status(503).json({ status: 'error' });
   }
 });
 
-app.post('/api/items', async (req, res) => {
-  const { title, description } = req.body || {};
-
-  if (!title || typeof title !== 'string' || !title.trim()) {
-    return res.status(400).json({ error: 'Title is required' });
-  }
-
+app.get('/api/products', async (req, res) => {
   try {
-    const result = await new Promise((resolve, reject) => {
-      db.run(
-        'INSERT INTO items (title, description) VALUES (?, ?)',
-        [title.trim(), description || ''],
-        function onInsert(err) {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve(this);
-        },
-      );
-    });
-
-    const item = await new Promise((resolve, reject) => {
-      db.get('SELECT * FROM items WHERE id = ?', [result.lastID], (err, row) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(row);
-      });
-    });
-
-    res.status(201).json(item);
+    res.json(await all('SELECT * FROM products ORDER BY id DESC'));
   } catch (error) {
-    logger.error('Failed to create item', error);
-    res.status(500).json({ error: 'Failed to create item' });
+    logger.error('Failed to fetch products', error);
+    res.status(500).json({ error: 'Failed to fetch products' });
   }
 });
 
-app.put('/api/items/:id', async (req, res) => {
+app.get('/api/products/:id', async (req, res) => {
   const { id } = req.params;
-  const { title, description } = req.body || {};
-
-  if (!title || typeof title !== 'string' || !title.trim()) {
-    return res.status(400).json({ error: 'Title is required' });
+  if (!validId(id)) {
+    return res.status(400).json({ error: 'Product ID must be a positive integer' });
   }
 
   try {
-    const result = await new Promise((resolve, reject) => {
-      db.run(
-        'UPDATE items SET title = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [title.trim(), description || '', id],
-        function onUpdate(err) {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve(this);
-        },
-      );
-    });
-
-    if (result.changes === 0) {
-      return res.status(404).json({ error: 'Item not found' });
+    const product = await get('SELECT * FROM products WHERE id = ?', [id]);
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
     }
-
-    const item = await new Promise((resolve, reject) => {
-      db.get('SELECT * FROM items WHERE id = ?', [id], (err, row) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(row);
-      });
-    });
-
-    res.json(item);
+    res.json(product);
   } catch (error) {
-    logger.error('Failed to update item', error);
-    res.status(500).json({ error: 'Failed to update item' });
+    logger.error('Failed to fetch product', error);
+    res.status(500).json({ error: 'Failed to fetch product' });
   }
 });
 
-app.delete('/api/items/:id', async (req, res) => {
-  const { id } = req.params;
+app.post('/api/products', async (req, res) => {
+  const validationError = validateProduct(req.body);
+  if (validationError) {
+    return res.status(400).json({ error: validationError });
+  }
 
   try {
-    const result = await new Promise((resolve, reject) => {
-      db.run('DELETE FROM items WHERE id = ?', [id], function onDelete(err) {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(this);
-      });
-    });
-
-    if (result.changes === 0) {
-      return res.status(404).json({ error: 'Item not found' });
-    }
-
-    res.json({ deleted: true, id: Number(id) });
+    const result = await run(
+      'INSERT INTO products (name, description, price, sku, category, stock) VALUES (?, ?, ?, ?, ?, ?)',
+      productValues(req.body),
+    );
+    res.status(201).json(await get('SELECT * FROM products WHERE id = ?', [result.lastID]));
   } catch (error) {
-    logger.error('Failed to delete item', error);
-    res.status(500).json({ error: 'Failed to delete item' });
+    if (error.code === 'SQLITE_CONSTRAINT') {
+      return res.status(409).json({ error: 'SKU already exists' });
+    }
+    logger.error('Failed to create product', error);
+    res.status(500).json({ error: 'Failed to create product' });
+  }
+});
+
+app.put('/api/products/:id', async (req, res) => {
+  const { id } = req.params;
+  if (!validId(id)) {
+    return res.status(400).json({ error: 'Product ID must be a positive integer' });
+  }
+  const validationError = validateProduct(req.body);
+  if (validationError) {
+    return res.status(400).json({ error: validationError });
+  }
+
+  try {
+    const result = await run(
+      `UPDATE products
+       SET name = ?, description = ?, price = ?, sku = ?, category = ?, stock = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [...productValues(req.body), id],
+    );
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    res.json(await get('SELECT * FROM products WHERE id = ?', [id]));
+  } catch (error) {
+    if (error.code === 'SQLITE_CONSTRAINT') {
+      return res.status(409).json({ error: 'SKU already exists' });
+    }
+    logger.error('Failed to update product', error);
+    res.status(500).json({ error: 'Failed to update product' });
+  }
+});
+
+app.delete('/api/products/:id', async (req, res) => {
+  const { id } = req.params;
+  if (!validId(id)) {
+    return res.status(400).json({ error: 'Product ID must be a positive integer' });
+  }
+
+  try {
+    const result = await run('DELETE FROM products WHERE id = ?', [id]);
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    res.status(204).end();
+  } catch (error) {
+    logger.error('Failed to delete product', error);
+    res.status(500).json({ error: 'Failed to delete product' });
   }
 });
 

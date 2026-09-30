@@ -5,12 +5,12 @@ services:
       dockerfile: Dockerfile
     container_name: devops-node-app
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:${PORT:-3000}"
     environment:
-      PORT: 3000
-      NODE_ENV: production
-      DB_PATH: /app/data/app.db
-      LOG_LEVEL: info
+      PORT: ${PORT:-3000}
+      NODE_ENV: ${NODE_ENV:-production}
+      DB_PATH: ${DB_PATH:-/app/data/app.db}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     volumes:
       - app-data:/app/data
     restart: unless-stopped

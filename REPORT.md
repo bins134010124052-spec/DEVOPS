@@ -55,7 +55,7 @@ Render Web Service
 
 ### 3.2 Thành phần chính
 
-- Node.js app: xây dựng REST API để quản lý danh sách item
+- Node.js app: xây dựng REST API để quản lý sản phẩm và tồn kho
 - SQLite: lưu trữ dữ liệu local và trong container
 - Docker: đóng gói ứng dụng để chạy nhất quán trên nhiều môi trường
 - GitHub Actions: tự động hóa kiểm tra, build, deploy
@@ -74,12 +74,12 @@ Dự án bắt đầu bằng việc khởi tạo package.json với các depende
 Ứng dụng cung cấp các endpoint sau:
 
 - `GET /health`
-- `GET /api/items`
-- `POST /api/items`
-- `PUT /api/items/:id`
-- `DELETE /api/items/:id`
+- `GET /api/products` và `GET /api/products/:id`
+- `POST /api/products`
+- `PUT /api/products/:id`
+- `DELETE /api/products/:id`
 
-Mỗi endpoint thực hiện logic CRUD từ SQLite, trả về JSON response rõ ràng. Input validation được kiểm tra để đảm bảo dữ liệu hợp lệ.
+Các endpoint thực hiện CRUD sản phẩm từ SQLite. API xác thực tên, giá, tồn kho và SKU; SKU được đặt unique để tránh trùng mã sản phẩm.
 
 ### 4.3 Kết nối database và cấu hình môi trường
 
@@ -106,10 +106,11 @@ Render Blueprint (`render.yaml`) khai báo Docker web service, health check `/he
 Workflow `.github/workflows/ci.yml` chạy trên push hoặc pull request. Quy trình gồm:
 
 1. Checkout source code
-2. Setup Node.js 18
+2. Setup Node.js 22
 3. Install dependencies bằng `npm ci`
 4. Chạy `npm run lint`
 5. Chạy `npm test`
+6. Chạy `npm run security` để audit dependency
 
 Nếu bước nào fail thì pipeline dừng ngay, đảm bảo không merge code lỗi vào hệ thống.
 
@@ -160,7 +161,7 @@ Khi chạy container, cần đảm bảo port, environment variables, và databa
 
 - Thêm staging environment tách biệt cụ thể cho production và staging
 - Thêm Prometheus/Grafana hoặc logging trung tâm để giám sát hệ thống
-- Thêm security scan như Trivy, npm audit, hoặc Snyk
+- Thêm image scan như Trivy hoặc Snyk Container
 - Tích hợp rollback script khi deploy thất bại
 - Tạo kịch bản deploy tự động theo tag release
 
