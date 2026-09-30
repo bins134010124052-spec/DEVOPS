@@ -19,7 +19,6 @@
     "devops",
     "ci-cd"
   ],
-  "author": "Your Name",
   "license": "MIT",
   "engines": {
     "node": ">=22"
