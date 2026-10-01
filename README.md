@@ -82,7 +82,7 @@ docker compose up --build
 The application will be available on:
 
 ```text
-http://localhost:3000
+http://localhost:3001
 ```
 
 ## Product API
@@ -99,7 +99,7 @@ Product fields: `name` and non-negative numeric `price` are required. `descripti
 Example:
 
 ```bash
-curl -X POST http://localhost:3000/api/products \
+curl -X POST http://localhost:3001/api/products \
     -H "Content-Type: application/json" \
     -d '{"name":"Keyboard","price":89.99,"sku":"KEY-001","stock":12}'
 ```

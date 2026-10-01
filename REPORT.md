@@ -93,7 +93,7 @@ Dockerfile được thiết kế theo dạng multi-stage:
 - Stage `build`: chạy lints/tests để đảm bảo chất lượng
 - Stage `final`: copy app minimal để chạy production
 
-Docker Compose file định nghĩa service `app` và expose port `3000`, giúp người dùng chạy nhanh bằng lệnh:
+Docker Compose file định nghĩa service `app` và expose port `3001`, giúp người dùng chạy nhanh bằng lệnh:
 
 ```bash
 docker compose up --build

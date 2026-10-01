@@ -21,7 +21,7 @@ COPY --from=production-dependencies --chown=node:node /app/node_modules ./node_m
 COPY --chown=node:node src ./src
 COPY --chown=node:node data ./data
 USER node
-EXPOSE 3000
+EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget -q --spider "http://127.0.0.1:${PORT:-3000}/health" || exit 1
+  CMD wget -q --spider "http://127.0.0.1:${PORT:-3001}/health" || exit 1
 CMD ["node", "src/server.js"]
