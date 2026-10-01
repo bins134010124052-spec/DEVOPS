@@ -99,7 +99,7 @@ Docker Compose file định nghĩa service `app` và expose port `3001`, giúp n
 docker compose up --build
 ```
 
-Render Blueprint (`render.yaml`) khai báo Docker web service, health check `/health`, và persistent disk mount tại `/app/data` để lưu SQLite qua các lần deploy.
+Render Blueprint (`render.yaml`) khai báo Docker web service Free và health check `/health`. Trên gói Free, filesystem là ephemeral; SQLite có thể mất dữ liệu khi service spin down, restart hoặc redeploy.
 
 ### 4.5 CI pipeline với GitHub Actions
 

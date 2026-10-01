@@ -113,7 +113,7 @@ The repository includes GitHub Actions workflows:
 
 ## Deployment
 
-Create or sync the Render service from `render.yaml` and connect it to this GitHub repository. The Blueprint provisions a Docker web service with a persistent disk for SQLite, `/health` health checks, and `autoDeployTrigger: checksPass`, so Render deploys after the linked branch's CI checks pass. The Starter plan and persistent disk require a paid Render account. No Render deploy-hook secret is needed. The GitHub Actions workflow only publishes the tested image after successful CI for a push to `main`; configure GitHub branch protection and require pull requests if direct pushes must be prohibited. After deployment, verify `https://<render-service>.onrender.com/health`.
+Create or sync the Render service from `render.yaml` and connect it to this GitHub repository. The Blueprint uses Render's Free plan, `/health` health checks, and `autoDeployTrigger: checksPass`, so Render deploys after the linked branch's CI checks pass. Free services spin down after 15 minutes without traffic and use an ephemeral filesystem; the SQLite database is lost on spin-down, restart, or redeploy. Render Free does not support persistent disks. No Render deploy-hook secret is needed. The GitHub Actions workflow publishes the tested image after successful CI for a push to `main`; configure GitHub branch protection and require pull requests if direct pushes must be prohibited. After deployment, verify `https://<render-service>.onrender.com/health`.
 
 The workflow also publishes the tested commit to GHCR. Render builds and runs the repository's Dockerfile; the GHCR image is published as a container registry artifact.
 
