@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 jobs:
-  publish-and-deploy:
+  publish-image:
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push' &&
@@ -50,13 +50,3 @@ jobs:
           tags: |
             ${{ steps.image-name.outputs.image }}:latest
             ${{ steps.image-name.outputs.image }}:${{ github.event.workflow_run.head_sha }}
-
-      - name: Trigger Render deployment
-        env:
-          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
-        run: |
-          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
-            echo "::error::Configure the RENDER_DEPLOY_HOOK repository secret before deploying."
-            exit 1
-          fi
-          curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK"
