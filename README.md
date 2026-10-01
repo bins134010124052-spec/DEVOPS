@@ -109,15 +109,11 @@ curl -X POST http://localhost:3001/api/products \
 The repository includes GitHub Actions workflows:
 
 - `.github/workflows/ci.yml` runs install, lint, tests, and `npm audit` on pushes and pull requests.
-- `.github/workflows/deploy.yml` runs only after CI succeeds for a push to `main`, builds the exact tested commit, pushes it to GitHub Container Registry, and triggers a Render deploy.
-
-Add this repository secret in GitHub:
-
-- `RENDER_DEPLOY_HOOK` — the deploy hook URL for the Render web service.
+- `.github/workflows/deploy.yml` runs only after CI succeeds for a push to `main` and publishes the tested commit to GitHub Container Registry using the built-in `GITHUB_TOKEN`.
 
 ## Deployment
 
-Create the Render service from `render.yaml` and connect it to this GitHub repository. The Blueprint provisions a Docker web service with a persistent disk for SQLite and `/health` health checks. The Starter plan and persistent disk require a paid Render account. Add the service's deploy hook URL as the `RENDER_DEPLOY_HOOK` GitHub Actions secret, then push or merge to `main`. The CD workflow only proceeds after successful CI for a push to `main`; configure GitHub branch protection and require pull requests if direct pushes must be prohibited. After deployment, verify `https://<render-service>.onrender.com/health`.
+Create or sync the Render service from `render.yaml` and connect it to this GitHub repository. The Blueprint provisions a Docker web service with a persistent disk for SQLite, `/health` health checks, and `autoDeployTrigger: checksPass`, so Render deploys after the linked branch's CI checks pass. The Starter plan and persistent disk require a paid Render account. No Render deploy-hook secret is needed. The GitHub Actions workflow only publishes the tested image after successful CI for a push to `main`; configure GitHub branch protection and require pull requests if direct pushes must be prohibited. After deployment, verify `https://<render-service>.onrender.com/health`.
 
 The workflow also publishes the tested commit to GHCR. Render builds and runs the repository's Dockerfile; the GHCR image is published as a container registry artifact.
 

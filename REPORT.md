@@ -59,7 +59,7 @@ Render Web Service
 - SQLite: lưu trữ dữ liệu local và trong container
 - Docker: đóng gói ứng dụng để chạy nhất quán trên nhiều môi trường
 - GitHub Actions: tự động hóa kiểm tra, build, deploy
-- GitHub Secrets: lưu Render deploy hook; GitHub token cấp quyền push image lên GHCR
+- GitHub Actions `GITHUB_TOKEN`: cấp quyền push image lên GHCR; không cần Render deploy-hook secret
 
 ---
 
@@ -121,9 +121,9 @@ Workflow `.github/workflows/deploy.yml` được thiết kế để:
 - Chạy khi CI pass và trên nhánh `main`
 - Checkout đúng commit đã pass CI
 - Build Docker image và push lên GitHub Container Registry (GHCR)
-- Gọi Render deploy hook để triển khai service từ repository đã liên kết
+- Render tự deploy service liên kết repository khi các CI checks pass (`autoDeployTrigger: checksPass`)
 
-Render deploy hook URL được lưu trong GitHub Secret `RENDER_DEPLOY_HOOK`. `GITHUB_TOKEN` được GitHub Actions cấp cho job để push image lên GHCR; token không được ghi vào mã nguồn.
+GitHub Actions dùng `GITHUB_TOKEN` được cấp tự động cho job để push image lên GHCR; không cần lưu Render deploy hook trong GitHub Secrets.
 
 ---
 
@@ -178,4 +178,4 @@ Khi chạy container, cần đảm bảo port, environment variables, và databa
 
 ## 9. Kết luận
 
-Bài làm đã có REST API, database, Docker, CI, cấu hình CD cho Render, secrets management và tài liệu. Để hoàn tất lần deploy public, cần tạo GitHub repository, kết nối repository với Render, cấu hình secret `RENDER_DEPLOY_HOOK`, rồi xác nhận pipeline và URL thực tế sau khi deploy.
+Bài làm đã có REST API, database, Docker, CI, cấu hình CD cho Render, secrets management và tài liệu. Để hoàn tất deploy public, cần tạo hoặc sync Render service từ Blueprint, kết nối service với repository, rồi xác nhận pipeline và URL thực tế sau khi deploy.
