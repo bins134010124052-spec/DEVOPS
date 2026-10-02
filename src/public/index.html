@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#172e2a">
+    <title>Kho hàng | Danh mục sản phẩm</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/catalog.js" defer></script>
+  </head>
+  <body>
+    <div class="app-frame">
+      <aside class="sidebar">
+        <a class="brand" href="/" aria-label="Trang chủ Kho hàng">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span class="brand-name">kho hàng<span>QUẢN LÝ TỒN KHO</span></span>
+        </a>
+
+        <nav class="primary-nav" aria-label="Điều hướng chính">
+          <span class="section-caption">DANH MỤC</span>
+          <a class="nav-link is-active" href="/" aria-current="page">
+            <span class="nav-symbol" aria-hidden="true">04</span>
+            Sản phẩm
+            <span class="nav-count" id="navProductCount">0</span>
+          </a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="api-indicator" id="apiIndicator" data-state="loading">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span id="apiStatus">Đang kết nối API</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="main-column">
+        <header class="topbar">
+          <div class="breadcrumbs"><span>Kho hàng</span><span class="breadcrumb-divider">/</span><strong>Sản phẩm</strong></div>
+          <div class="topbar-tools">
+            <span class="today-label" id="todayLabel"></span>
+            <button class="button button-quiet" type="button" id="refreshButton">Làm mới</button>
+          </div>
+        </header>
+
+        <main class="content">
+          <section class="page-heading" aria-labelledby="pageTitle">
+            <div>
+              <p class="eyebrow"><span class="eyebrow-mark"></span>KHO HÀNG <span>/</span> DANH MỤC</p>
+              <h1 id="pageTitle">Danh mục sản phẩm</h1>
+              <p class="page-description">Theo dõi sản phẩm, giá bán và số lượng tồn kho.</p>
+            </div>
+            <button class="button button-primary" type="button" id="addProductButton"><span class="button-plus" aria-hidden="true">+</span> Thêm sản phẩm</button>
+          </section>
+
+          <section class="metrics" aria-label="Tổng quan tồn kho">
+            <article class="metric metric-featured">
+              <div class="metric-topline"><span>Sản phẩm</span><span class="metric-index">01</span></div>
+              <strong class="metric-value" id="metricProducts">0</strong>
+              <span class="metric-footnote">Mặt hàng trong danh mục</span>
+            </article>
+            <article class="metric">
+              <div class="metric-topline"><span>Giá trị tồn kho</span><span class="metric-index">02</span></div>
+              <strong class="metric-value" id="metricValue">0 ₫</strong>
+              <span class="metric-footnote">Theo đơn giá hiện tại</span>
+            </article>
+            <article class="metric">
+              <div class="metric-topline"><span>Sắp hết hàng</span><span class="metric-index">03</span></div>
+              <strong class="metric-value" id="metricLow">0</strong>
+              <span class="metric-footnote">Còn từ 1 đến 5 sản phẩm</span>
+            </article>
+            <article class="metric">
+              <div class="metric-topline"><span>Nhóm hàng</span><span class="metric-index">04</span></div>
+              <strong class="metric-value" id="metricCategories">0</strong>
+              <span class="metric-footnote">Nhóm hàng đang sử dụng</span>
+            </article>
+          </section>
+
+          <section class="catalog-section" aria-labelledby="catalogTitle">
+            <div class="catalog-heading">
+              <div>
+                <div class="catalog-title-row"><h2 id="catalogTitle">Tất cả sản phẩm</h2><span class="record-count" id="recordCount">0 bản ghi</span></div>
+                <p>Tìm kiếm, xem và cập nhật thông tin tồn kho.</p>
+              </div>
+            </div>
+
+            <div class="toolbar">
+              <label class="search-field">
+                <span class="search-caption">Tìm kiếm</span>
+                <input id="searchInput" type="search" placeholder="Tên, mã SKU hoặc nhóm hàng" autocomplete="off">
+              </label>
+              <label class="select-field">
+                <span>Nhóm hàng</span>
+                <select id="categoryFilter" aria-label="Lọc theo nhóm hàng">
+                  <option value="">Tất cả nhóm hàng</option>
+                </select>
+              </label>
+              <label class="select-field stock-filter">
+                <span>Tồn kho</span>
+                <select id="stockFilter" aria-label="Lọc theo tình trạng tồn kho">
+                  <option value="all">Mọi mức tồn</option>
+                  <option value="low">Sắp hết hàng</option>
+                  <option value="out">Hết hàng</option>
+                </select>
+              </label>
+              <span class="filtered-count" id="filteredCount" aria-live="polite">0 sản phẩm</span>
+            </div>
+
+            <div class="table-scroll">
+              <table class="product-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Sản phẩm</th>
+                    <th scope="col">Mã SKU</th>
+                    <th scope="col">Nhóm hàng</th>
+                    <th scope="col" class="numeric-cell">Đơn giá</th>
+                    <th scope="col">Số lượng</th>
+                    <th scope="col">Cập nhật</th>
+                    <th scope="col"><span class="visually-hidden">Thao tác</span></th>
+                  </tr>
+                </thead>
+                <tbody id="productRows">
+                  <tr><td class="table-message" colspan="7">Đang tải danh mục...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-footer"><span>Danh mục kho hàng</span><span id="footerCount">0 sản phẩm</span></div>
+          </section>
+
+          <footer class="page-footer"><span>KHO HÀNG <span class="footer-separator">/</span> QUẢN LÝ TỒN KHO</span><span>Dữ liệu được đồng bộ với hệ thống</span></footer>
+        </main>
+      </div>
+    </div>
+
+    <dialog class="product-dialog" id="productDialog" aria-labelledby="dialogTitle">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow" id="dialogEyebrow">THÊM MẶT HÀNG</p>
+          <h2 id="dialogTitle">Thêm sản phẩm</h2>
+        </div>
+        <button class="button button-quiet dialog-close" type="button" id="closeDialogButton">Đóng</button>
+      </div>
+      <form id="productForm">
+        <div class="form-grid">
+          <label class="form-field field-wide">
+            <span>Tên sản phẩm <b>*</b></span>
+            <input name="name" type="text" maxlength="120" placeholder="Ví dụ: Tai nghe phòng thu" required>
+          </label>
+          <label class="form-field">
+            <span>Mã SKU</span>
+            <input name="sku" type="text" maxlength="80" placeholder="Ví dụ: AUDIO-014">
+          </label>
+          <label class="form-field">
+            <span>Nhóm hàng</span>
+            <input name="category" type="text" maxlength="80" placeholder="Ví dụ: Thiết bị âm thanh">
+          </label>
+          <label class="form-field">
+            <span>Đơn giá (VND) <b>*</b></span>
+            <span class="input-with-prefix"><span>₫</span><input name="price" type="number" min="0" step="1" placeholder="0" required></span>
+          </label>
+          <label class="form-field">
+            <span>Số lượng tồn kho</span>
+            <input name="stock" type="number" min="0" step="1" value="0" required>
+          </label>
+          <label class="form-field field-wide">
+            <span>Mô tả</span>
+            <textarea name="description" rows="3" maxlength="500" placeholder="Thông tin ngắn về sản phẩm"></textarea>
+          </label>
+        </div>
+        <div class="form-error" id="formError" role="alert" hidden></div>
+        <div class="dialog-actions">
+          <button class="button button-quiet" type="button" id="cancelDialogButton">Hủy</button>
+          <button class="button button-primary" type="submit" id="saveProductButton">Lưu sản phẩm</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="product-dialog confirm-dialog" id="deleteDialog" aria-labelledby="deleteDialogTitle">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">XÓA MẶT HÀNG</p>
+          <h2 id="deleteDialogTitle">Xóa sản phẩm?</h2>
+        </div>
+      </div>
+      <p class="confirm-copy">Sản phẩm <strong id="deleteProductName"></strong> sẽ bị xóa khỏi danh mục.</p>
+      <div class="dialog-actions">
+        <button class="button button-quiet" type="button" id="cancelDeleteButton">Giữ lại</button>
+        <button class="button button-danger" type="button" id="confirmDeleteButton">Xóa sản phẩm</button>
+      </div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  </body>
+</html>

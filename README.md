@@ -19,8 +19,12 @@ This repository contains a Node.js REST API for product inventory, backed by SQL
 ```text
 .
 ├── src/
-│   ├── app.js
-│   └── server.js
+│   ├── api.js              # Express API and static frontend mounting
+│   ├── server.js           # HTTP server entry point
+│   └── public/
+│       ├── index.html      # Vietnamese inventory interface
+│       ├── catalog.js     # Browser-side product CRUD
+│       └── styles.css
 ├── tests/
 │   └── app.test.js
 ├── data/
@@ -94,14 +98,14 @@ http://localhost:3001
 - `PUT /api/products/:id` — replace a product
 - `DELETE /api/products/:id` — delete a product (204 response)
 
-Product fields: `name` and non-negative numeric `price` are required. `description`, `sku`, `category`, and non-negative integer `stock` are optional. SKU values must be unique.
+Product fields: `name` and non-negative integer `price` in VND are required. `description`, `sku`, `category`, and non-negative integer `stock` are optional. SKU values must be unique. Existing USD prices are converted once at a fixed rate of 25,000 VND/USD during database initialization.
 
 Example:
 
 ```bash
 curl -X POST http://localhost:3001/api/products \
     -H "Content-Type: application/json" \
-    -d '{"name":"Keyboard","price":89.99,"sku":"KEY-001","stock":12}'
+    -d '{"name":"Keyboard","price":2249750,"sku":"KEY-001","stock":12}'
 ```
 
 ## CI/CD

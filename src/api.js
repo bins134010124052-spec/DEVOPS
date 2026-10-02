@@ -25,10 +25,58 @@ app.use(morgan('combined', {
     write: (message) => logger.info(message.trim()),
   },
 }));
+app.use(express.static(path.join(__dirname, 'public')));
 
 const defaultDbPath = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'app.db');
+const usdToVndRate = 25000;
+const priceMigrationName = 'prices-usd-to-vnd-25000-v1';
 
 let db;
+
+function run(sql, parameters = []) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, parameters, function onRun(error) {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(this);
+    });
+  });
+}
+
+function get(sql, parameters = []) {
+  return new Promise((resolve, reject) => {
+    db.get(sql, parameters, (error, row) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(row);
+    });
+  });
+}
+
+async function migrateLegacyUsdPrices() {
+  await run(`CREATE TABLE IF NOT EXISTS app_migrations (
+    name TEXT PRIMARY KEY,
+    applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+  await run('BEGIN IMMEDIATE TRANSACTION');
+
+  try {
+    const applied = await get('SELECT name FROM app_migrations WHERE name = ?', [priceMigrationName]);
+    if (!applied) {
+      await run('UPDATE products SET price = ROUND(price * ?, 0)', [usdToVndRate]);
+      await run('INSERT INTO app_migrations (name) VALUES (?)', [priceMigrationName]);
+    }
+
+    await run('COMMIT');
+  } catch (error) {
+    await run('ROLLBACK').catch(() => undefined);
+    throw error;
+  }
+}
 
 function initializeDatabase(databasePath = defaultDbPath) {
   return new Promise((resolve, reject) => {
@@ -60,7 +108,7 @@ function initializeDatabase(databasePath = defaultDbPath) {
             return;
           }
 
-          resolve();
+          migrateLegacyUsdPrices().then(resolve).catch(reject);
         },
       );
     });
@@ -79,26 +127,21 @@ function resetDatabase() {
   });
 }
 
-function run(sql, parameters = []) {
+function closeDatabase() {
   return new Promise((resolve, reject) => {
-    db.run(sql, parameters, function onRun(error) {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve(this);
-    });
-  });
-}
+    if (!db) {
+      resolve();
+      return;
+    }
 
-function get(sql, parameters = []) {
-  return new Promise((resolve, reject) => {
-    db.get(sql, parameters, (error, row) => {
+    const database = db;
+    db = null;
+    database.close((error) => {
       if (error) {
         reject(error);
         return;
       }
-      resolve(row);
+      resolve();
     });
   });
 }
@@ -122,8 +165,8 @@ function validateProduct(product) {
   if (typeof product.name !== 'string' || !product.name.trim()) {
     return 'Name is required';
   }
-  if (typeof product.price !== 'number' || !Number.isFinite(product.price) || product.price < 0) {
-    return 'Price must be a non-negative number';
+  if (typeof product.price !== 'number' || !Number.isInteger(product.price) || product.price < 0) {
+    return 'Price must be a non-negative integer';
   }
   if (product.description !== undefined && typeof product.description !== 'string') {
     return 'Description must be a string';
@@ -261,4 +304,9 @@ app.delete('/api/products/:id', async (req, res) => {
   }
 });
 
-module.exports = { app, initializeDatabase, resetDatabase };
+module.exports = {
+  app,
+  initializeDatabase,
+  resetDatabase,
+  closeDatabase,
+};
