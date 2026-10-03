@@ -2,23 +2,13 @@
   "name": "devops-nodejs-webapp",
   "version": "1.0.0",
   "description": "Node.js REST API with Docker, CI/CD and deployment setup",
-  "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "lint": "eslint src tests --ext .js",
     "test": "jest --runInBand",
-    "security": "npm audit --audit-level=high",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "security": "npm audit --audit-level=high"
   },
-  "keywords": [
-    "nodejs",
-    "express",
-    "docker",
-    "devops",
-    "ci-cd"
-  ],
   "license": "MIT",
   "engines": {
     "node": ">=22"
